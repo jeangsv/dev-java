@@ -18,17 +18,6 @@ import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.DadosInvalidosException;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoDuplicadoException;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoNaoEncontradoException;
 
-/**
- * Testes públicos do acervo.
- *
- * <p>Os testes ativos passam com o código que veio no repositório. Os marcados com
- * {@code @Disabled} cobrem o que você ainda precisa implementar: remova a anotação
- * quando for implementar cada método.</p>
- *
- * <p>Estes testes são um piso, não um teto. A avaliação considera a suíte que
- * <em>você</em> escreve — cenários, casos-limite e regras de negócio que estes aqui
- * não cobrem.</p>
- */
 class AcervoTest {
 
     private Biblioteca biblioteca;
@@ -106,9 +95,16 @@ class AcervoTest {
         assertEquals(List.of(), biblioteca.acervo().listarItens());
     }
 
-    // ------------------------------------------------------------------
-    // A implementar na Entrega 1. Remova @Disabled ao implementar cada um.
-    // ------------------------------------------------------------------
+    @Test
+    @DisplayName("busca de item deve funcionar com instâncias distintas de String (defeito oculto com ==)")
+    void buscarItemComNovaInstanciaDeString() throws BibliotecaException {
+        biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+        String codigoDiferenteReferencia = new String("L1");
+
+        ItemView item = biblioteca.acervo().buscarItem(codigoDiferenteReferencia);
+        assertEquals("L1", item.codigo());
+        assertEquals("Java Efetivo", item.titulo());
+    }
 
     @Test
     @Disabled("Entrega 1: implementar adicionarExemplar e listarExemplares")
