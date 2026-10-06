@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +17,7 @@ import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.DadosInvalidosException;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoDuplicadoException;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoNaoEncontradoException;
 
-/** Testes públicos dos usuários. */
+/** Testes unitários do gerenciamento de usuários. */
 class UsuarioTest {
 
     private Biblioteca biblioteca;
@@ -61,13 +63,33 @@ class UsuarioTest {
     }
 
     @Test
+    @DisplayName("matrícula em branco é entrada inválida")
+    void matriculaEmBranco() {
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.usuarios().cadastrarUsuario("   ", "Carlos"));
+    }
+
+    @Test
     @DisplayName("listar devolve os usuários ordenados por nome")
     void listarOrdenado() throws BibliotecaException {
         biblioteca.usuarios().cadastrarUsuario("3", "Carlos");
         biblioteca.usuarios().cadastrarUsuario("1", "Ana");
         biblioteca.usuarios().cadastrarUsuario("2", "Bruno");
 
-        assertEquals("Ana", biblioteca.usuarios().listarUsuarios().get(0).nome());
-        assertEquals("Carlos", biblioteca.usuarios().listarUsuarios().get(2).nome());
+        List<UsuarioView> usuarios = biblioteca.usuarios().listarUsuarios();
+
+        assertEquals(3, usuarios.size());
+        assertEquals("Ana", usuarios.get(0).nome());
+        assertEquals("Bruno", usuarios.get(1).nome());
+        assertEquals("Carlos", usuarios.get(2).nome());
+    }
+
+    @Test
+    @DisplayName("encapsulamento: lista de usuários retornada é imutável")
+    void encapsulamentoListaUsuarios() throws BibliotecaException {
+        biblioteca.usuarios().cadastrarUsuario("1", "Ana");
+        List<UsuarioView> lista = biblioteca.usuarios().listarUsuarios();
+        assertThrows(UnsupportedOperationException.class, () -> lista.clear());
+        assertEquals(1, biblioteca.usuarios().listarUsuarios().size());
     }
 }

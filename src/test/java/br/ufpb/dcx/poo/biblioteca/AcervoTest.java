@@ -6,11 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import br.ufpb.dcx.poo.biblioteca.contrato.Biblioteca;
+import br.ufpb.dcx.poo.biblioteca.contrato.ExemplarView;
 import br.ufpb.dcx.poo.biblioteca.contrato.ItemView;
 import br.ufpb.dcx.poo.biblioteca.contrato.StatusExemplar;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.BibliotecaException;
@@ -107,7 +107,6 @@ class AcervoTest {
     }
 
     @Test
-    @Disabled("Entrega 1: implementar adicionarExemplar e listarExemplares")
     @DisplayName("exemplar adicionado entra como DISPONIVEL e conta no item")
     void adicionarExemplar() throws BibliotecaException {
         biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
@@ -118,12 +117,14 @@ class AcervoTest {
         assertEquals(2, item.totalDeExemplares());
         assertEquals(2, item.exemplaresDisponiveis());
 
-        assertEquals(StatusExemplar.DISPONIVEL,
-                biblioteca.acervo().listarExemplares("L1").get(0).status());
+        List<ExemplarView> exemplares = biblioteca.acervo().listarExemplares("L1");
+        assertEquals(2, exemplares.size());
+        assertEquals(StatusExemplar.DISPONIVEL, exemplares.get(0).status());
+        assertEquals("T-001", exemplares.get(0).tombo());
+        assertEquals("T-002", exemplares.get(1).tombo());
     }
 
     @Test
-    @Disabled("Entrega 1: implementar adicionarExemplar")
     @DisplayName("tombo é único no acervo inteiro, não apenas dentro do item")
     void tomboDuplicadoEntreItensDiferentes() throws BibliotecaException {
         biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
@@ -135,7 +136,16 @@ class AcervoTest {
     }
 
     @Test
-    @Disabled("Entrega 1: implementar adicionarExemplar")
+    @DisplayName("tombo duplicado no mesmo item lança RecursoDuplicadoException")
+    void tomboDuplicadoNoMesmoItem() throws BibliotecaException {
+        biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+        biblioteca.acervo().adicionarExemplar("L1", "T-001");
+
+        assertThrows(RecursoDuplicadoException.class,
+                () -> biblioteca.acervo().adicionarExemplar("L1", "T-001"));
+    }
+
+    @Test
     @DisplayName("não se adiciona exemplar a item que não existe")
     void exemplarDeItemInexistente() {
         assertThrows(RecursoNaoEncontradoException.class,
@@ -143,7 +153,13 @@ class AcervoTest {
     }
 
     @Test
-    @Disabled("Entrega 1: implementar buscarPorTitulo")
+    @DisplayName("listar exemplares de item inexistente lança RecursoNaoEncontradoException")
+    void listarExemplaresDeItemInexistente() {
+        assertThrows(RecursoNaoEncontradoException.class,
+                () -> biblioteca.acervo().listarExemplares("NAO-EXISTE"));
+    }
+
+    @Test
     @DisplayName("busca por título ignora maiúsculas e aceita trecho")
     void buscarPorTitulo() throws BibliotecaException {
         biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
@@ -154,9 +170,84 @@ class AcervoTest {
     }
 
     @Test
-    @Disabled("Entrega 1: implementar buscarPorTitulo")
     @DisplayName("busca sem resultado devolve lista vazia, não exceção")
     void buscarPorTituloSemResultado() {
         assertEquals(List.of(), biblioteca.acervo().buscarPorTitulo("inexistente"));
+    }
+
+    @Test
+    @DisplayName("busca por título com trecho nulo lança DadosInvalidosException")
+    void buscarPorTituloNulo() {
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().buscarPorTitulo(null));
+    }
+
+    @Test
+    @DisplayName("validação de entradas inválidas no cadastro de itens")
+    void cadastroComCamposInvalidos() {
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem(null, "Título", "Autor", "livro", 2020));
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem("L1", null, "Autor", "livro", 2020));
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem("L1", "Título", null, "livro", 2020));
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem("L1", "Título", "Autor", null, 2020));
+    }
+
+    @Test
+    @DisplayName("regra autoral: ano de publicação anterior à imprensa (1450) é rejeitado")
+    void anoDePublicacaoInvalidoPassado() {
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem("L1", "Manuscrito Antigo", "Autor", "livro", 1400));
+    }
+
+    @Test
+    @DisplayName("regra autoral: ano de publicação no futuro distante é rejeitado")
+    void anoDePublicacaoInvalidoFuturo() {
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().cadastrarItem("L1", "Livro do Futuro", "Autor", "livro", 2150));
+    }
+
+    @Test
+    @DisplayName("adicionar exemplar com tombo nulo ou vazio lança DadosInvalidosException")
+    void adicionarExemplarTomboInvalido() throws BibliotecaException {
+        biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().adicionarExemplar("L1", null));
+        assertThrows(DadosInvalidosException.class,
+                () -> biblioteca.acervo().adicionarExemplar("L1", "   "));
+    }
+
+    @Test
+    @DisplayName("encapsulamento: coleções retornadas são imutáveis e protegem o estado interno")
+    void encapsulamentoDasListasRetornadas() throws BibliotecaException {
+        biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+        biblioteca.acervo().adicionarExemplar("L1", "T-001");
+
+        List<ItemView> itens = biblioteca.acervo().listarItens();
+        assertThrows(UnsupportedOperationException.class, () -> itens.clear());
+
+        List<ExemplarView> exemplares = biblioteca.acervo().listarExemplares("L1");
+        assertThrows(UnsupportedOperationException.class, () -> exemplares.clear());
+
+        assertEquals(1, biblioteca.acervo().listarItens().size());
+        assertEquals(1, biblioteca.acervo().listarExemplares("L1").size());
+    }
+
+    @Test
+    @DisplayName("atomicidade: falha ao adicionar exemplar duplicado não corrompe o estado")
+    void atomicidadeAdicionarExemplar() throws BibliotecaException {
+        biblioteca.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+        biblioteca.acervo().cadastrarItem("L2", "Refatoração", "Fowler", "livro", 2004);
+
+        biblioteca.acervo().adicionarExemplar("L1", "T-001");
+
+        assertThrows(RecursoDuplicadoException.class,
+                () -> biblioteca.acervo().adicionarExemplar("L2", "T-001"));
+
+        assertEquals(1, biblioteca.acervo().buscarItem("L1").totalDeExemplares());
+        assertEquals(0, biblioteca.acervo().buscarItem("L2").totalDeExemplares());
     }
 }

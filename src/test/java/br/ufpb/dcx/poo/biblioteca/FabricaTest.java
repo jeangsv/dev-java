@@ -12,9 +12,7 @@ import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.BibliotecaException;
 
 /**
  * Verifica o ponto de entrada do contrato.
- *
- * <p>Se algum destes testes falhar, os testes de correção não conseguirão nem
- * começar a rodar. Eles precisam continuar passando o semestre inteiro.</p>
+ * Garante que a fábrica instancia serviços independentes sem compartilhamento de estado estático.
  */
 class FabricaTest {
 
@@ -39,8 +37,15 @@ class FabricaTest {
         assertNotSame(uma, outra);
 
         uma.acervo().cadastrarItem("L1", "Java Efetivo", "Bloch", "livro", 2019);
+        uma.acervo().adicionarExemplar("L1", "T-001");
 
         assertEquals(1, uma.acervo().listarItens().size());
+        assertEquals(1, uma.acervo().listarExemplares("L1").size());
         assertEquals(0, outra.acervo().listarItens().size());
+
+        // A outra biblioteca pode cadastrar o mesmo tombo pois são instâncias isoladas
+        outra.acervo().cadastrarItem("L2", "Refatoração", "Fowler", "livro", 2004);
+        outra.acervo().adicionarExemplar("L2", "T-001");
+        assertEquals(1, outra.acervo().listarExemplares("L2").size());
     }
 }
