@@ -12,19 +12,6 @@ import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.OperacaoNaoPermitidaExceptio
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoDuplicadoException;
 import br.ufpb.dcx.poo.biblioteca.contrato.excecoes.RecursoNaoEncontradoException;
 
-/**
- * Implementação inicial e parcial do acervo, guardando tudo em memória.
- *
- * <p><strong>Leia antes de estender.</strong> Três métodos já funcionam para os casos
- * mais simples: {@code cadastrarItem}, {@code buscarItem} e {@code listarItens}. Os
- * demais lançam {@link UnsupportedOperationException} e são tarefa sua.</p>
- *
- * <p>O que já está pronto <em>não</em> é um bom exemplo a copiar. Há decisões aqui
- * que você deve questionar ao longo da disciplina: como os itens são guardados, como
- * são procurados, quem é responsável por validar o quê e o que cada objeto expõe
- * para fora de si. Parte da avaliação é justamente perceber e justificar essas
- * mudanças.</p>
- */
 public class AcervoEmMemoria implements AcervoService {
 
     private final List<Item> itens = new ArrayList<>();
@@ -90,14 +77,9 @@ public class AcervoEmMemoria implements AcervoService {
         throw new UnsupportedOperationException("Entrega 2: implementar baixarExemplar");
     }
 
-    /**
-     * Procura um item pelo código. Devolve {@code null} quando não encontra.
-     *
-     * <p>Este é o método que os outros usam para localizar um item.</p>
-     */
     private Item localizar(String codigo) {
         for (Item item : itens) {
-            if (item.getCodigo() == codigo) {
+            if (item.getCodigo().equals(codigo)) {
                 return item;
             }
         }
@@ -127,7 +109,6 @@ public class AcervoEmMemoria implements AcervoService {
         }
     }
 
-    /** Acesso interno usado pelos demais serviços da implementação inicial. */
     List<Item> itens() {
         return itens;
     }
