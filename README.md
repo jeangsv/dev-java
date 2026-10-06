@@ -1,109 +1,145 @@
-# Sistema de Gestão de Biblioteca/Acervo
+# Sistema de Gestão de Acervo e Biblioteca
 
-Projeto incremental da disciplina de **Programação Orientada a Objetos** — DCX/CCAE/UFPB.
-
-Este repositório é o ponto de partida do seu projeto. Ele compila, executa e tem testes passando, mas está **deliberadamente incompleto** e contém decisões de design questionáveis. Encontrá-las, justificá-las e corrigi-las faz parte da disciplina.
+Projeto desenvolvido para a disciplina de **Programação Orientada a Objetos** — DCX/CCAE/UFPB (Entrega 1).
 
 ---
 
-## Começando
+## 1. Visão Geral do Domínio
 
-Você precisa de **JDK 21** e **Maven**. No IntelliJ IDEA, abra a pasta do projeto e ele reconhece o `pom.xml` sozinho.
+O sistema gerencia o acervo bibliográfico e os usuários de uma biblioteca universitária, permitindo o cadastramento e busca de obras (livros, periódicos e mídias), controle de exemplares físicos com tombos globais e gerenciamento de usuários.
 
+As entidades centrais do domínio são:
+* **Item**: Representa a obra intelectual cadastrada no acervo (identificada por um código único, título, autoria, categoria e ano de publicação).
+* **Exemplar**: Representa a unidade física correspondente a um Item, identificada por um número de tombo único em todo o sistema e acompanhada de seu estado de disponibilidade (`DISPONIVEL`, `EMPRESTADO`, etc.).
+* **Usuario**: Representa o membro da comunidade acadêmica cadastrado para utilização dos serviços da biblioteca (identificado por matrícula e nome).
+
+---
+
+## 2. Mapa do Projeto
+
+A estrutura de diretórios do projeto está organizada da seguinte forma:
+
+```text
+dev-java/
+├── .github/workflows/
+│   └── build.yml               # Pipeline de integração contínua (GitHub Actions com Maven e JDK 21)
+├── dados/
+│   └── itens-exemplo.csv       # Arquivo de dados de exemplo para o acervo
+├── docs/
+│   ├── modelo.puml             # Diagrama de classes UML do domínio e arquitetura em formato PlantUML
+│   └── modelo.png              # Imagem gerada do diagrama UML do sistema
+├── src/
+│   ├── main/java/br/ufpb/dcx/poo/biblioteca/
+│   │   ├── Fabrica.java        # Ponto de entrada oficial para instanciação independente da Biblioteca
+│   │   ├── contrato/           # Pacote CONGELADO com interfaces, records de visualização e exceções
+│   │   │   ├── Biblioteca.java
+│   │   │   ├── AcervoService.java
+│   │   │   ├── UsuarioService.java
+│   │   │   ├── EmprestimoService.java
+│   │   │   ├── RelatorioService.java
+│   │   │   ├── *View.java
+│   │   │   ├── Status*.java
+│   │   │   └── excecoes/
+│   │   └── inicial/            # Implementação do modelo de domínio e serviços em memória
+│   │       ├── Item.java       # Entidade de domínio Item com proteção de invariantes
+│   │       ├── Exemplar.java   # Entidade de domínio Exemplar
+│   │       ├── Usuario.java    # Entidade de domínio Usuario
+│   │       ├── AcervoEmMemoria.java      # Implementação do AcervoService em memória (Map/List)
+│   │       ├── UsuariosEmMemoria.java    # Implementação do UsuarioService em memória (Map)
+│   │       └── BibliotecaInicial.java    # Ponto centralizador dos serviços da Biblioteca
+│   └── test/java/br/ufpb/dcx/poo/biblioteca/
+│       ├── AcervoTest.java     # Suíte de testes do acervo (casos normais, inválidos, limites e encapsulamento)
+│       ├── UsuarioTest.java    # Suíte de testes de usuários
+│       └── FabricaTest.java    # Suíte de testes de isolamento e integridade da Fábrica
+├── pom.xml                     # Configuração do Maven (Java 21, JUnit 5 Surefire)
+├── DECLARACAO-DE-USO-DE-IA.md  # Registro transparente do uso de ferramentas de IA
+└── README.md                   # Documentação completa do projeto
+```
+
+---
+
+## 3. Como Executar
+
+O projeto utiliza **Java 21** e **Maven**.
+
+### Executar a suíte de testes:
 ```bash
-mvn -B verify      # compila e roda os testes
-mvn -B test        # só os testes
+mvn test
 ```
 
-Se tudo estiver certo, você verá `Tests run: 19, Failures: 0, Errors: 0, Skipped: 5`.
-
-Os 5 pulados são os testes marcados com `@Disabled`: eles cobrem o que você ainda vai implementar. Remova a anotação de cada um quando implementar o método correspondente.
-
----
-
-## Mapa do projeto
-
-```
-src/main/java/br/ufpb/dcx/poo/biblioteca/
-├── contrato/          ← CONGELADO. Não edite nada aqui.
-│   ├── Biblioteca.java              ponto único de acesso aos serviços
-│   ├── AcervoService.java           itens e exemplares
-│   ├── UsuarioService.java          usuários
-│   ├── EmprestimoService.java       empréstimos, devoluções e reservas
-│   ├── RelatorioService.java        consultas e importação em lote
-│   ├── *View.java                   o que as consultas devolvem
-│   ├── Status*.java                 estados de exemplar e de empréstimo
-│   └── excecoes/                    a hierarquia de erros do sistema
-│
-├── Fabrica.java       ← nome e assinatura congelados; o corpo é seu
-│
-└── inicial/           ← ponto de partida; altere, mova, renomeie ou apague
-    ├── Item.java
-    ├── Exemplar.java
-    ├── AcervoEmMemoria.java
-    ├── UsuariosEmMemoria.java
-    ├── EmprestimosNaoImplementados.java
-    ├── RelatoriosNaoImplementados.java
-    └── BibliotecaInicial.java
-
-src/test/java/…       ← seus testes; comece pelos que já estão aqui
-dados/                ← arquivos de exemplo
-.github/workflows/    ← a integração contínua, já configurada
+### Compilar, verificar regras e empacotar:
+```bash
+mvn verify
 ```
 
 ---
 
-## As duas regras
+## 4. Justificativa das Escolhas de Coleções
 
-**1. O pacote `contrato` é congelado.** Não renomeie, não altere assinaturas, não acrescente nem remova métodos. Os testes de correção são escritos contra esses tipos: se você mudar qualquer coisa ali, eles não compilam e a entrega não pode ser avaliada.
+Para garantir clareza, integridade de dados e desempenho adequado a cada requisito do sistema, foram utilizadas as seguintes estruturas de dados:
 
-**2. `Fabrica.novaBiblioteca()` precisa continuar funcionando.** É por esse método que os testes obtêm o seu sistema. Você vai trocar o que ele devolve — não troque o nome, o pacote nem a assinatura. Cada chamada precisa devolver uma instância nova e independente.
+1. **`Map<String, Item>` (`LinkedHashMap` em `AcervoEmMemoria`)**:
+   * *Onde:* Mapeamento interno dos itens cadastrados indexados pelo `codigo`.
+   * *Por que:* O código do item é seu identificador único. O `Map` garante que a verificação de duplicidade (`containsKey`) e a recuperação do item (`get`) ocorram em tempo constante $O(1)$, evitando varreduras lineares desnecessárias e impedindo códigos repetidos. A variante `LinkedHashMap` preserva a ordem de inserção original.
 
-Fora isso, **tudo é seu**. O pacote `inicial` não é modelo: é matéria-prima. Você pode reescrevê-lo inteiro.
+2. **`Map<String, Exemplar>` (`HashMap` em `AcervoEmMemoria`)**:
+   * *Onde:* Registro global de todos os exemplares físicos da biblioteca indexados pelo `tombo`.
+   * *Por que:* A regra do domínio exige que o tombo seja único globalmente em todo o acervo (entre obras iguais ou distintas). Mapear diretamente os tombos em uma tabela hash permite validar a unicidade global em $O(1)$ antes de associar o exemplar ao seu respectivo item.
 
----
+3. **`List<Exemplar>` (`ArrayList` em `Item`)**:
+   * *Onde:* Lista de exemplares físicos pertencentes a um item específico.
+   * *Por que:* Uma obra pode possuir múltiplos exemplares ordenados cronologicamente por aquisição/tombamento. A lista indexada permite iteração direta para contagem de totais e disponíveis.
 
-## O que já funciona e o que falta
+4. **`Map<String, Usuario>` (`LinkedHashMap` em `UsuariosEmMemoria`)**:
+   * *Onde:* Armazenamento dos usuários cadastrados indexados pela `matricula`.
+   * *Por que:* A matrícula é a chave primária natural do usuário. O uso de `Map` substituiu as listas paralelas anteriores, agrupando os dados no objeto de domínio `Usuario` e permitindo buscas e validações em $O(1)$.
 
-| Serviço | Situação |
-|---|---|
-| `AcervoService` | `cadastrarItem`, `buscarItem` e `listarItens` funcionam para os casos simples. O resto é seu. |
-| `UsuarioService` | `cadastrarUsuario`, `buscarUsuario` e `listarUsuarios` funcionam. `desativar`/`reativar` são da Entrega 2. |
-| `EmprestimoService` | Esqueleto. Entrega 2. |
-| `RelatorioService` | Esqueleto. Entrega 3. |
-| `Biblioteca.salvar/carregar` | Esqueleto. Entrega 2. |
-
-Métodos ainda não implementados lançam `UnsupportedOperationException` com a indicação da entrega. Cada mensagem diz o que fazer.
-
----
-
-## Um aviso honesto
-
-O código do pacote `inicial` **tem problemas**. Alguns são de design e você vai reconhecê-los conforme a disciplina avançar. Pelo menos um é um defeito de comportamento que os testes atuais **não** pegam: o sistema faz a coisa errada em uma situação que ninguém testou ainda.
-
-Isso é proposital. Encontrar esse tipo de defeito — reproduzir, escrever o teste que falha, corrigir, ver o teste passar — é uma das competências avaliadas. Não confie em suíte verde como prova de correção.
+5. **Encapsulamento com Coleções Imutáveis (`Collections.unmodifiableList` / `List.copyOf`)**:
+   * *Onde:* Em todos os métodos que retornam listas (`listarItens()`, `buscarPorTitulo()`, `listarExemplares()`, `listarUsuarios()`, `Item.getExemplares()`).
+   * *Por que:* Impede que consumidores externos consigam invocar métodos mutáveis como `.clear()` ou `.remove()` na referência recebida, protegendo o estado interno da biblioteca contra corrupção.
 
 ---
 
-## Extensão autoral
+## 5. Defeito Oculto Identificado e Corrigido
 
-Sua equipe escolhe um acervo próprio: jogos, filmes, quadrinhos, instrumentos, obras locais, recursos de laboratório. A extensão vive **por fora** do contrato — novos tipos, novos serviços, novas regras — e precisa incluir ao menos **uma regra de negócio própria**, documentada abaixo, que os testes de correção não conhecem e que você demonstra na defesa.
+### O Defeito
+No código original fornecido em `AcervoEmMemoria.java`, a busca interna de itens no método `localizar(String codigo)` realizava a comparação utilizando o operador de igualdade de referência:
+```java
+// Código original com defeito:
+if (item.getCodigo() == codigo) {
+    return item;
+}
+```
+Como em Java o operador `==` compara a identidade de memória dos objetos `String` e não o seu conteúdo, qualquer chamada a `buscarItem` ou `cadastrarItem` que recebesse uma `String` instanciada dinamicamente (como `new String("L1")` ou textos lidos de arquivos/entradas de usuário) falhava ao localizar o item, lançando indevidamente `RecursoNaoEncontradoException` ou permitindo itens duplicados.
 
-### Nossa extensão
-
-> Substitua esta seção: qual acervo, qual regra de negócio própria, o que ela muda no comportamento do sistema.
+### Processo de Correção (TDD / Regressão)
+1. **Teste de Regressão (Commit 1):** Foi criado o teste `buscarItemComNovaInstanciaDeString` em `AcervoTest.java`, passando `new String("L1")`. Inicialmente o teste falhou comprovando a existência do defeito (`commit: test: adiciona teste de regressão para defeito no acervo`).
+2. **Correção Pontual (Commit 2):** O código foi corrigido para utilizar `.equals()` (`commit: fix: corrige defeito identificado no acervo`).
+3. **Refatoração com Map:** Posteriormente, a estrutura foi aprimorada com a utilização de `Map<String, Item>`, garantindo busca segura e de alta performance.
 
 ---
 
-## Uso de ferramentas de IA
+## 6. Extensão Autoral da Equipe
 
-O uso é permitido como apoio, desde que declarado em [`DECLARACAO-DE-USO-DE-IA.md`](DECLARACAO-DE-USO-DE-IA.md). Você continua responsável por explicar, testar e adaptar todo o código entregue — inclusive em uma alteração feita presencialmente, sem consulta, na defesa da Entrega 3.
+### Regra de Negócio: Validação Temporal de Publicação e Unicidade Estrita de Tombamento
+* **Motivação:** Em um sistema bibliotecário acadêmico, o catálogo deve garantir a plausibilidade histórica das obras e a integridade do patrimônio físico.
+* **Comportamento da Regra:**
+  1. *Validação Temporal de Publicação:* Todo item cadastrado deve possuir ano de publicação plausível, definido no intervalo entre o marco histórico da imprensa moderna (ano **1450**) e o ano corrente acrescido de um ano de margem editorial. Obras com anos anteriores a 1450 (como manuscritos antigos que exigem tombamento especial de arquivo) ou datas futuras irreais disparam `DadosInvalidosException`.
+  2. *Proteção de Invariantes das Entidades:* As entidades de domínio (`Item`, `Exemplar`, `Usuario`) protegem ativamente suas invariantes já em seus construtores, rejeitando valores nulos, vazios ou em branco.
+  3. *Atomicidade e Unicidade Global de Tombo:* A tentativa de cadastrar um tombo duplicado em qualquer obra falha sem corromper ou alterar parcialmente o estado do item ou do acervo.
+* **Onde foi implementada:** Em `Item.java` (constante `ANO_MINIMO_PUBLICACAO`, validação no construtor e setters), `Exemplar.java`, `Usuario.java` e `AcervoEmMemoria.java`.
+* **Testes:** Coberta pelos testes unitários `anoDePublicacaoInvalidoPassado()`, `anoDePublicacaoInvalidoFuturo()`, `tomboDuplicadoEntreItensDiferentes()`, `tomboDuplicadoNoMesmoItem()`, `encapsulamentoDasListasRetornadas()` e `atomicidadeAdicionarExemplar()` em `AcervoTest.java`.
 
 ---
 
-## Equipe
+## 7. Modelo UML
+
+O diagrama completo de classes e arquitetura do sistema encontra-se modelado em [`docs/modelo.puml`](docs/modelo.puml) e renderizado na imagem [`docs/modelo.png`](docs/modelo.png).
+
+---
+
+## 8. Equipe
 
 | Nome | Matrícula | GitHub |
 |---|---|---|
-| | | |
-| | | |
+| Jean Gustavo | 2026001 | @JeanGustavo |

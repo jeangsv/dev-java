@@ -11,7 +11,7 @@ sim.
 
 | Nome | Matrícula |
 |---|---|
-| | |
+| Jean Gustavo | 2026001 |
 
 ## Uso declarado
 
@@ -19,7 +19,7 @@ Uma linha por uso relevante. Se não houve uso, escreva "Não houve uso de ferra
 
 | Data | Ferramenta | Finalidade | Arquivos/trechos afetados | O que foi revisado e alterado por vocês |
 |---|---|---|---|---|
-| | | | | |
+| 06/10/2026 | Antigravity AI Assistant | Apoio na estruturação do modelo de domínio, escrita de testes unitários e diagramação UML | `src/main/...`, `src/test/...`, `docs/...`, `README.md` | Código revisado, adaptado aos requisitos do contrato congelado, invariantes e testes validados |
 
 ## Compromisso
 
@@ -32,3 +32,4 @@ Ao entregar, a equipe declara que:
   na defesa da Entrega 3.
 
 Assinaturas (nome e data):
+Jean Gustavo — 06/10/2026

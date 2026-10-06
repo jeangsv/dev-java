@@ -1,32 +1,149 @@
 @startuml
-' Modelo de domínio do sistema: Entrega 1.
-'
-' Este arquivo é o ponto de partida. Substitua pelo modelo da sua equipe.
-' O diagrama precisa corresponder ao código entregue.
-'
-' Para gerar a imagem: instale o plugin PlantUML no IntelliJ, ou use
-'   plantuml docs/modelo.puml
-' e versione a imagem gerada ao lado deste arquivo.
-
 skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam shadowing false
+skinparam defaultFontName Arial
 hide empty members
 
-class Item {
-  - codigo : String
-  - titulo : String
+package "br.ufpb.dcx.poo.biblioteca.contrato" {
+    interface Biblioteca {
+        + acervo() : AcervoService
+        + usuarios() : UsuarioService
+        + emprestimos() : EmprestimoService
+        + relatorios() : RelatorioService
+        + salvar() : void
+        + carregar() : void
+    }
+
+    interface AcervoService {
+        + cadastrarItem(codigo: String, titulo: String, autoria: String, categoria: String, ano: int) : void
+        + buscarItem(codigo: String) : ItemView
+        + listarItens() : List<ItemView>
+        + buscarPorTitulo(trecho: String) : List<ItemView>
+        + buscarPorCategoria(categoria: String) : List<ItemView>
+        + adicionarExemplar(codigoDoItem: String, tombo: String) : void
+        + listarExemplares(codigoDoItem: String) : List<ExemplarView>
+        + baixarExemplar(tombo: String) : void
+    }
+
+    interface UsuarioService {
+        + cadastrarUsuario(matricula: String, nome: String) : void
+        + buscarUsuario(matricula: String) : UsuarioView
+        + listarUsuarios() : List<UsuarioView>
+        + desativarUsuario(matricula: String) : void
+        + reativarUsuario(matricula: String) : void
+    }
+
+    enum StatusExemplar {
+        DISPONIVEL
+        EMPRESTADO
+        RESERVADO
+        INDISPONIVEL
+    }
+
+    class ItemView <<record>> {
+        + codigo : String
+        + titulo : String
+        + autoria : String
+        + categoria : String
+        + ano : int
+        + totalDeExemplares : int
+        + exemplaresDisponiveis : int
+    }
+
+    class ExemplarView <<record>> {
+        + tombo : String
+        + codigoDoItem : String
+        + status : StatusExemplar
+    }
+
+    class UsuarioView <<record>> {
+        + matricula : String
+        + nome : String
+        + ativo : boolean
+        + emprestimosAtivos : int
+    }
 }
 
-class Exemplar {
-  - tombo : String
+package "br.ufpb.dcx.poo.biblioteca" {
+    class Fabrica {
+        + {static} novaBiblioteca() : Biblioteca
+    }
 }
 
-Item "1" *-- "0..*" Exemplar : possui
+package "br.ufpb.dcx.poo.biblioteca.inicial" {
+    class Item {
+        - codigo : String
+        - titulo : String
+        - autoria : String
+        - categoria : String
+        - ano : int
+        - exemplares : List<Exemplar>
+        + Item(codigo: String, titulo: String, autoria: String, categoria: String, ano: int)
+        + getCodigo() : String
+        + getTitulo() : String
+        + getAutoria() : String
+        + getCategoria() : String
+        + getAno() : int
+        + adicionarExemplar(exemplar: Exemplar) : void
+        + getExemplares() : List<Exemplar>
+        + getTotalDeExemplares() : int
+        + getExemplaresDisponiveis() : int
+    }
 
-note bottom of Item
-  Ponto de partida, não modelo pronto.
-  Decidam: quais entidades existem,
-  quem guarda o quê, quais invariantes
-  cada objeto protege.
-end note
+    class Exemplar {
+        - tombo : String
+        - item : Item
+        - status : StatusExemplar
+        + Exemplar(tombo: String, item: Item)
+        + getTombo() : String
+        + getItem() : Item
+        + getStatus() : StatusExemplar
+        + setStatus(status: StatusExemplar) : void
+    }
+
+    class Usuario {
+        - matricula : String
+        - nome : String
+        - ativo : boolean
+        - emprestimosAtivos : int
+        + Usuario(matricula: String, nome: String)
+        + getMatricula() : String
+        + getNome() : String
+        + isAtivo() : boolean
+        + getEmprestimosAtivos() : int
+    }
+
+    class AcervoEmMemoria {
+        - itensPorCodigo : Map<String, Item>
+        - exemplaresPorTombo : Map<String, Exemplar>
+    }
+
+    class UsuariosEmMemoria {
+        - usuariosPorMatricula : Map<String, Usuario>
+    }
+
+    class BibliotecaInicial {
+        - acervo : AcervoEmMemoria
+        - usuarios : UsuariosEmMemoria
+    }
+}
+
+BibliotecaInicial ..|> Biblioteca
+AcervoEmMemoria ..|> AcervoService
+UsuariosEmMemoria ..|> UsuarioService
+
+Fabrica ..> BibliotecaInicial : cria
+
+BibliotecaInicial *--> AcervoEmMemoria : acervo
+BibliotecaInicial *--> UsuariosEmMemoria : usuarios
+
+AcervoEmMemoria o--> "0..*" Item : itensPorCodigo
+AcervoEmMemoria o--> "0..*" Exemplar : exemplaresPorTombo (unicidade global)
+UsuariosEmMemoria o--> "0..*" Usuario : usuariosPorMatricula
+
+Item "1" *--> "0..*" Exemplar : exemplares
+Exemplar --> "1" Item : item
+Exemplar --> StatusExemplar : status
 
 @enduml
